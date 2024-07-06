@@ -1,0 +1,520 @@
+openapi: 3.0.3
+info:
+  title: Laravel
+  description: ''
+  version: 1.0.0
+servers:
+  -
+    url: 'http://localhost:8000'
+paths:
+  /api/login:
+    post:
+      summary: Login
+      operationId: login
+      description: ''
+      parameters: []
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  token: 1|sometokenstring
+                properties:
+                  token:
+                    type: string
+                    example: 1|sometokenstring
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthorized
+                properties:
+                  message:
+                    type: string
+                    example: Unauthorized
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  description: 'The email of the user.'
+                  example: johndoe@example.com
+                password:
+                  type: string
+                  description: 'The password of the user.'
+                  example: secretpassword
+              required:
+                - email
+                - password
+      security: []
+  /api/register:
+    post:
+      summary: Register
+      operationId: register
+      description: ''
+      parameters: []
+      responses:
+        201:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  token: 1|sometokenstring
+                properties:
+                  token:
+                    type: string
+                    example: 1|sometokenstring
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 'The name of the user.'
+                  example: 'John Doe'
+                email:
+                  type: string
+                  description: 'The email of the user.'
+                  example: johndoe@example.com
+                phone:
+                  type: string
+                  description: 'The phone number of the user in international format.'
+                  example: '+36123456789'
+                password:
+                  type: string
+                  description: 'The password of the user.'
+                  example: secretpassword
+              required:
+                - name
+                - email
+                - phone
+                - password
+      security: []
+  '/api/email/verify/{id}/{hash}':
+    get:
+      summary: 'Verify email'
+      operationId: verifyEmail
+      description: ''
+      parameters: []
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: 'Email verified successfully'
+                properties:
+                  message:
+                    type: string
+                    example: 'Email verified successfully'
+        400:
+          description: ''
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  -
+                    description: ''
+                    type: object
+                    example:
+                      message: 'Invalid verification link'
+                    properties:
+                      message:
+                        type: string
+                        example: 'Invalid verification link'
+                  -
+                    description: ''
+                    type: object
+                    example:
+                      message: 'Email already verified'
+                    properties:
+                      message:
+                        type: string
+                        example: 'Email already verified'
+        403:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthorized
+                properties:
+                  message:
+                    type: string
+                    example: Unauthorized
+      tags:
+        - Authentication
+      security: []
+    parameters:
+      -
+        in: path
+        name: id
+        description: 'The ID of the user.'
+        example: 1
+        required: true
+        schema:
+          type: integer
+      -
+        in: path
+        name: hash
+        description: 'The email verification hash.'
+        example: e3afed0047b08059d0fada10f400c1e5
+        required: true
+        schema:
+          type: string
+  /api/password/email:
+    post:
+      summary: 'Send password reset link'
+      operationId: sendPasswordResetLink
+      description: ''
+      parameters: []
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: 'We have emailed your password reset link!'
+                properties:
+                  message:
+                    type: string
+                    example: 'We have emailed your password reset link!'
+        400:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: "We can't find a user with that email address."
+                properties:
+                  message:
+                    type: string
+                    example: "We can't find a user with that email address."
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  description: 'The email address of the user.'
+                  example: johndoe@example.com
+              required:
+                - email
+      security: []
+  /api/password/reset:
+    post:
+      summary: 'Reset password'
+      operationId: resetPassword
+      description: ''
+      parameters: []
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: 'Your password has been reset!'
+                properties:
+                  message:
+                    type: string
+                    example: 'Your password has been reset!'
+        422:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  errors:
+                    email:
+                      - 'This password reset token is invalid.'
+                properties:
+                  errors:
+                    type: object
+                    properties:
+                      email:
+                        type: array
+                        example:
+                          - 'This password reset token is invalid.'
+                        items:
+                          type: string
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  description: 'The password reset token.'
+                  example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                email:
+                  type: string
+                  description: 'The email address of the user.'
+                  example: johndoe@example.com
+                password:
+                  type: string
+                  description: 'The new password.'
+                  example: newpassword123
+                password_confirmation:
+                  type: string
+                  description: 'Confirmation of the new password.'
+                  example: newpassword123
+              required:
+                - token
+                - email
+                - password
+                - password_confirmation
+      security: []
+  /api/logout:
+    post:
+      summary: Logout
+      operationId: logout
+      description: ''
+      parameters: []
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: 'Logged out'
+                properties:
+                  message:
+                    type: string
+                    example: 'Logged out'
+      tags:
+        - Authentication
+  /api/phone-verification:
+    get:
+      summary: 'Send verification code'
+      operationId: sendVerificationCode
+      description: ''
+      parameters: []
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: 'Verification code has been sent, please check your messenger.'
+                properties:
+                  message:
+                    type: string
+                    example: 'Verification code has been sent, please check your messenger.'
+        400:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: 'Verification code has been sent, please check your messenger.'
+                properties:
+                  message:
+                    type: string
+                    example: 'Verification code has been sent, please check your messenger.'
+      tags:
+        - Authentication
+  /api/phone-verification-resend:
+    post:
+      summary: 'Resend verification code'
+      operationId: resendVerificationCode
+      description: ''
+      parameters: []
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: 'Verification code sent.'
+                properties:
+                  message:
+                    type: string
+                    example: 'Verification code sent.'
+        400:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: 'Verification code sent.'
+                properties:
+                  message:
+                    type: string
+                    example: 'Verification code sent.'
+      tags:
+        - Authentication
+  /api/phone-verify:
+    post:
+      summary: 'Verify code'
+      operationId: verifyCode
+      description: ''
+      parameters: []
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: 'Verification successful!'
+                properties:
+                  message:
+                    type: string
+                    example: 'Verification successful!'
+        400:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: 'Invalid verification code. Please try again.'
+                properties:
+                  message:
+                    type: string
+                    example: 'Invalid verification code. Please try again.'
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                verification_code:
+                  type: integer
+                  description: 'The 4-digit verification code.'
+                  example: 1234
+              required:
+                - verification_code
+  /api/email/verify:
+    get:
+      summary: ''
+      operationId: getApiEmailVerify
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Authentication
+      security: []
+  /api/email/resend:
+    post:
+      summary: 'Resend email verification'
+      operationId: resendEmailVerification
+      description: ''
+      parameters: []
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: 'Verification email resent'
+                properties:
+                  message:
+                    type: string
+                    example: 'Verification email resent'
+        400:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: 'Email already verified'
+                properties:
+                  message:
+                    type: string
+                    example: 'Email already verified'
+      tags:
+        - Authentication
+  /api/user:
+    get:
+      summary: ''
+      operationId: getApiUser
+      description: ''
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Endpoints
+      security: []
+tags:
+  -
+    name: Authentication
+    description: "\nAPIs for user authentication"
+  -
+    name: Endpoints
+    description: ''
