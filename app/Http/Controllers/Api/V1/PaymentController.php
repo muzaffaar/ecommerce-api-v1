@@ -3,13 +3,16 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\AddressRequest;
 use App\Jobs\SendInvoice;
 use App\Jobs\SendOrderConfirmation;
+use App\Models\BillingAddress;
 use Illuminate\Http\Request;
 use Srmklive\PayPal\Services\PayPal as PayPalClient;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
+use App\Models\ShippingAddress;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -17,7 +20,7 @@ use Illuminate\Support\Str;
 class PaymentController extends Controller
 {
     
-    public function payment(Request $request)
+    public function payment(AddressRequest $request)
     {
         $provider = new PayPalClient;
         $provider->setApiCredentials(config('paypal'));
@@ -59,8 +62,13 @@ class PaymentController extends Controller
             'user_id' => Auth::user()->id,
             'order_number' => Str::uuid(),
             'total_amount' => $totalAmount,
+            // add addresses
             'status' => 'pending',
         ]);
+
+        // Store billing and shipping addresses temporarily in session or cache
+        session()->put('billing_address', $request->input('billing_address'));
+        session()->put('shipping_address', $request->input('shipping_address'));
 
         $response = $provider->createOrder([
             "intent" => "CAPTURE",
@@ -104,11 +112,30 @@ class PaymentController extends Controller
 
         // orderId = $response['purchase_units']['reference_id'];
         if (isset($response['status']) && $response['status'] == 'COMPLETED') {
+
+            // Retrieve billing and shipping addresses from session or cache
+            $billingAddress = session()->get('billing_address');
+            $shippingAddress = session()->get('shipping_address');
+
+            // Create or update billing address for the user
+            $billingAddressModel = BillingAddress::updateOrCreate(
+                ['user_id' => Auth::user()->id],
+                $billingAddress
+            );
+
+            // Create or update shipping address for the user
+            $shippingAddressModel = ShippingAddress::updateOrCreate(
+                ['user_id' => Auth::user()->id],
+                $shippingAddress
+            );
+
             $orderId = $response['purchase_units'][0]['reference_id'];
 
             // Update the order status to 'completed'
             $order = Order::where('order_number', $orderId)->firstOrFail();
             $order->status = 'completed';
+            $order->billing_address_id = $billingAddressModel->id; // Associate billing address
+            $order->shipping_address_id = $shippingAddressModel->id; // Associate shipping address
             $order->save();
 
             // Retrieve cart items from the user's cart
