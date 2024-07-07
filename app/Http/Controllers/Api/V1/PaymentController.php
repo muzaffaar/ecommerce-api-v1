@@ -17,7 +17,7 @@ use Illuminate\Support\Str;
 class PaymentController extends Controller
 {
     
-    public function payment()
+    public function payment(Request $request)
     {
         $provider = new PayPalClient;
         $provider->setApiCredentials(config('paypal'));

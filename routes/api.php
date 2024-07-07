@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\Auth\ResetPasswordController;
 use App\Http\Controllers\Api\V1\CartController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\CategoryController;
+use App\Http\Controllers\Api\V1\CheckoutController;
 use App\Http\Controllers\Api\V1\PaymentController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -86,6 +87,8 @@ Route::middleware(['auth:sanctum'])->group(function(){
         Route::post('/payment', [PaymentController::class, 'payment'])->name('payment');
         Route::get('/success', [PaymentController::class, 'success'])->name('success');
         Route::get('/cancel', [PaymentController::class, 'calcel'])->name('cancel');
+
+        Route::get('/checkout', [CheckoutController::class, 'checkout'])->name('checkout');
     });
     
 });
