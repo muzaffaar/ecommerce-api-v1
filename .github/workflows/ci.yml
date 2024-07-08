@@ -68,3 +68,11 @@ jobs:
           docker push your-dockerhub-username/your-repo-name:latest
 
       - name: Deploy to server
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          ssh -i $SSH_PRIVATE_KEY user@your-server-ip << 'EOF'
+          docker pull your-dockerhub-username/your-repo-name:latest
+          docker-compose down
+          docker-compose up -d
+          EOF
