@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: laravel-app
+    restart: unless-stopped
+    tty: true
+    environment:
+      SERVICE_NAME: app
+      SERVICE_TAGS: dev
+    working_dir: /var/www
+    volumes:
+      - ./:/var/www
+      - ./php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    networks:
+      - app-network
+
+  webserver:
+    image: nginx:alpine
+    container_name: laravel-webserver
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "8000:80"
+    volumes:
+      - ./:/var/www
+      - ./nginx/conf.d:/etc/nginx/conf.d
+    networks:
+      - app-network
+
+  db:
+    image: mysql:5.7
+    container_name: laravel-db
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "3307:3306"  # Change the host port to 3307 or another available port
+    environment:
+      MYSQL_DATABASE: lara_ecommerce_api
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_PASSWORD: root
+    volumes:
+      - dbdata:/var/lib/mysql
+    networks:
+      - app-network
+
+volumes:
+  dbdata:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge
