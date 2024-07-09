@@ -64,5 +64,19 @@ jobs:
       - name: Run migrations
         run: php artisan migrate --no-interaction --env=testing
 
+      - name: Seed database
+        run: php artisan db:seed --no-interaction --env=testing
+
       - name: Run test suite
         run: php artisan test --env=testing
+
+      - name: Generate test coverage report
+        run: |
+          mkdir -p test-coverage
+          php artisan test --coverage-html test-coverage
+
+      - name: Upload test coverage report
+        uses: actions/upload-artifact@v2
+        with:
+          name: test-coverage
+          path: test-coverage
