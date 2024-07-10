@@ -76,10 +76,10 @@ jobs:
       - name: Run test suite
         run: docker-compose run --rm app php artisan test --env=testing
 
-      - name: Generate test coverage report
-        run: |
-          mkdir -p test-coverage
-          docker-compose run --rm app php artisan test --coverage-html test-coverage
+      # - name: Generate test coverage report
+      #   run: |
+      #     mkdir -p test-coverage
+      #     docker-compose run --rm app php artisan test --coverage-html test-coverage
 
       - name: Upload test coverage report
         uses: actions/upload-artifact@v2
