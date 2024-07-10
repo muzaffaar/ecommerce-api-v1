@@ -20,7 +20,7 @@ jobs:
           MYSQL_ROOT_PASSWORD: password
           MYSQL_DATABASE: lara_ecommerce_api
         ports:
-          - 3306:3306
+          - 3307:3306
         options: >-
           --health-cmd="mysqladmin ping --silent"
           --health-interval=10s
@@ -46,6 +46,7 @@ jobs:
             echo 'Waiting for MySQL to be ready...'
             sleep 5
           done
+        shell: bash
 
       - name: Install dependencies
         run: docker-compose exec app composer install --no-interaction --prefer-dist
