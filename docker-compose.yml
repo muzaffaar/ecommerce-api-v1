@@ -36,19 +36,14 @@ services:
 
   db:
     image: mysql:5.7
-    container_name: mysql
-    restart: unless-stopped
+    restart: always
     environment:
       MYSQL_ROOT_PASSWORD: password
       MYSQL_DATABASE: lara_ecommerce_api
-      MYSQL_USER: root
-      MYSQL_PASSWORD: password
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - dbdata:/var/lib/mysql
-    networks:
-      - laravel
 
 networks:
   laravel:
