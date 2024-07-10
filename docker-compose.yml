@@ -5,51 +5,53 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    image: laravel-app
     container_name: laravel_app
     restart: unless-stopped
     working_dir: /var/www
     volumes:
       - .:/var/www
-      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+      - ./php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    environment:
+      - DB_CONNECTION=mysql
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_DATABASE=lara_ecommerce_api
+      - DB_USERNAME=root
+      - DB_PASSWORD=password
     networks:
-      - app-network
+      - laravel
+
+  webserver:
+    image: nginx:alpine
+    container_name: nginx
+    restart: unless-stopped
     ports:
-      - "9000:9000"
-    depends_on:
-      - db
+      - "8000:80"
+    volumes:
+      - .:/var/www
+      - ./nginx/conf.d:/etc/nginx/conf.d
+    networks:
+      - laravel
 
   db:
     image: mysql:5.7
-    container_name: laravel_db
+    container_name: mysql
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: lara_ecommerce_api
       MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: lara_ecommerce_api
       MYSQL_USER: root
       MYSQL_PASSWORD: password
-    volumes:
-      - dbdata:/var/lib/mysql
     ports:
       - "3306:3306"
-    networks:
-      - app-network
-
-  web:
-    image: nginx:alpine
-    container_name: laravel_web
-    restart: unless-stopped
-    ports:
-      - "8080:80"
     volumes:
-      - .:/var/www
-      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
-    depends_on:
-      - app
+      - dbdata:/var/lib/mysql
     networks:
-      - app-network
+      - laravel
+
+networks:
+  laravel:
 
 volumes:
   dbdata:
-
-networks:
-  app-network:

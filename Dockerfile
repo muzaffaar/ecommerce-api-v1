@@ -1,36 +1,43 @@
-# Use the official PHP image as a base
+# Use an official PHP runtime as a parent image
 FROM php:8.2-fpm
 
 # Set working directory
 WORKDIR /var/www
 
-# Install dependencies
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
     libpng-dev \
-    libjpeg-dev \
+    libjpeg62-turbo-dev \
     libfreetype6-dev \
-    libzip-dev \
+    locales \
     zip \
+    jpegoptim optipng pngquant gifsicle \
+    vim \
     unzip \
     git \
-    curl
+    curl \
+    libonig-dev \
+    libxml2-dev \
+    default-mysql-client
+
+# Clear cache
+RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install PHP extensions
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo pdo_mysql gd zip
+RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Copy application code
+# Copy existing application directory contents
 COPY . /var/www
 
-# Install application dependencies
-RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+# Copy existing application directory permissions
+COPY --chown=www-data:www-data . /var/www
 
-# Set permissions for Laravel
-RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
+# Change current user to www
+USER www-data
 
 # Expose port 9000 and start php-fpm server
 EXPOSE 9000
