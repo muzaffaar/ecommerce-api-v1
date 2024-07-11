@@ -98,7 +98,8 @@ class ProductController extends Controller
     public function search(ProductSearchRequest $request)
     {
         $validated = $request->validated();
-
+        // return response()->json($validated);
+        
         $productsQuery = Product::query();
 
         // Apply filters based on validated inputs
@@ -117,7 +118,7 @@ class ProductController extends Controller
 
         if ($validated['tags'] ?? false) {
             $productsQuery->whereHas('tags', function($q) use ($validated) {
-                $q->whereIn('name', $validated['tags']);
+                $q->whereIn('tag_id', $validated['tags']);
             });
         }
 
@@ -138,11 +139,17 @@ class ProductController extends Controller
         }
 
         if ($validated['size'] ?? false) {
-            $productsQuery->where('size', 'LIKE', "%{$validated['size']}%");
+            $productsQuery->whereHas('variations', function($q) use ($validated) {
+                $q->where('type', 'LIKE', 'size')
+                ->where('value', 'LIKE', "%{$validated['size']}%");
+            });
         }
 
         if ($validated['color'] ?? false) {
-            $productsQuery->where('color', 'LIKE', "%{$validated['color']}%");
+            $productsQuery->whereHas('variations', function($q) use ($validated) {
+                $q->where('type', 'LIKE', 'color');
+                $q->where('value', 'LIKE', "%{$validated['color']}%");
+            });
         }
 
         if ($validated['availability'] ?? false) {
@@ -155,9 +162,12 @@ class ProductController extends Controller
         }
 
         // Paginate the results
-        $products = $productsQuery->with('category', 'tags', 'images', 'variations') // Eager load relationships
-                                ->paginate(16);
-
+        $products = $productsQuery
+        ->with('category', 'tags', 'images', 'variations')
+        ->paginate(16);
+        if ($products->isEmpty()) {
+            return response()->json(["message" => "Products not found"], 404);
+        }
         return response()->json($products);
     }
 
