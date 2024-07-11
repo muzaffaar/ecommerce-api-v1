@@ -95,7 +95,7 @@ class ProductController extends Controller
         }
     }
 
-    public function search(ProductRequest $request)
+    public function search(ProductSearchRequest $request)
     {
         $validated = $request->validated();
 
