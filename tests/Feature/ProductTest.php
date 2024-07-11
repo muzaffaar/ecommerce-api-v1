@@ -113,7 +113,7 @@ class ProductTest extends TestCase
         $variations = ProductVariation::factory()->count(3)->create(['product_id' => $product->id]);
         $images = ProductImage::factory()->count(2)->create(['product_id' => $product->id, 'is_primary' => true]);
 
-        $response = $this->getJson(route('admin.products.index'));
+        $response = $this->actingAs($this->adminUser)->getJson(route('admin.products.index'));
 
         $response->assertStatus(200);
 
@@ -271,7 +271,7 @@ class ProductTest extends TestCase
         $product = Product::factory()->create(['category_id' => $category->id, 'price' => 67.72]);
         $variations = ProductVariation::factory()->count(3)->create(['product_id' => $product->id]);
 
-        $response = $this->get(route('admin.products.show', ['slug' => $product->slug]));
+        $response = $this->actingAs($this->adminUser)->get(route('admin.products.show', ['slug' => $product->slug]));
 
         $response->assertStatus(200);
 

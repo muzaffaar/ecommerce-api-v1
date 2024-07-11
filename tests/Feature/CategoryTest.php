@@ -104,7 +104,7 @@ class CategoryTest extends TestCase
     {
         $categories = Category::factory()->count(3)->create();
 
-        $response = $this->getJson(route('admin.categories.index'));
+        $response = $this->actingAs($this->adminUser)->getJson(route('admin.categories.index'));
 
         $response->assertStatus(200)
                  ->assertJsonCount(3);
@@ -127,7 +127,7 @@ class CategoryTest extends TestCase
     {
         $category = Category::factory()->create();
 
-        $response = $this->getJson(route('admin.categories.show', $category->id));
+        $response = $this->actingAs($this->adminUser)->getJson(route('admin.categories.show', $category->id));
 
         $response->assertStatus(200)
                  ->assertJsonFragment(['name' => $category->name]);
