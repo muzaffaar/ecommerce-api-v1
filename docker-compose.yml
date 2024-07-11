@@ -28,5 +28,15 @@ services:
     volumes:
       - dbdata:/var/lib/mysql
 
+  webserver:
+    image: nginx:alpine
+    depends_on:
+      - app
+    ports:
+      - "8000:80"
+    volumes:
+      - .:/var/www/html
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+
 volumes:
   dbdata:
