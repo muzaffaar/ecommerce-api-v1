@@ -95,50 +95,67 @@ class ProductController extends Controller
         }
     }
 
-    public function search(ProductSearchRequest $request)
+    public function search(ProductRequest $request)
     {
-        $queryParam = $request->input('query');
-        $cacheKey = 'search_' . md5($queryParam . json_encode($request->all()));
-        $cacheTime = config('cache.cache_time', 60); // Default cache time to 60 minutes if not set
+        $validated = $request->validated();
 
-        // Check if the results are cached
-        $products = Cache::remember($cacheKey, $cacheTime, function() use ($request) {
-            $query = Product::query();
+        $products = Product::query();
 
-            // Array of filters and their respective conditions
-            $filters = [
-                'name' => fn($q, $value) => $q->where('name', 'like', '%' . $value . '%'),
-                'description' => fn($q, $value) => $q->where('description', 'like', '%' . $value . '%'),
-                'category_id' => fn($q, $value) => $q->where('category_id', $value),
-                'tag' => fn($q, $value) => $q->whereHas('tags', fn($q) => $q->where('name', 'like', '%' . $value . '%')),
-                'price_min' => fn($q, $value) => $q->where('price', '>=', $value),
-                'price_max' => fn($q, $value) => $q->where('price', '<=', $value),
-                'rating_min' => fn($q, $value) => $q->where('rating', '>=', $value),
-                'brand' => fn($q, $value) => $q->where('brand', 'like', '%' . $value . '%'),
-                'size' => fn($q, $value) => $q->where('size', $value),
-                'color' => fn($q, $value) => $q->where('color', $value),
-                'availability' => fn($q, $value) => $q->where('availability', $value),
-            ];
+        if ($validated['name'] ?? false) {
+            $products->where('name', 'LIKE', "%{$validated['name']}%");
+        }
 
-            // Apply filters dynamically
-            foreach ($filters as $filter => $condition) {
-                if ($request->filled($filter)) {
-                    $condition($query, $request->input($filter));
-                }
-            }
+        if ($validated['description'] ?? false) {
+            $products->where('description', 'LIKE', "%{$validated['description']}%");
+        }
 
-            // Apply sorting if provided
-            if ($request->filled('sort_by')) {
-                $sortBy = $request->input('sort_by');
-                $sortOrder = $request->input('sort_order', 'asc');
-                $query->orderBy($sortBy, $sortOrder);
-            }
+        if ($validated['category_id'] ?? false) {
+            $products->where('category_id', $validated['category_id']);
+        }
 
-            return $query->with(['category', 'tags', 'images', 'variations'])->get();
-        });
+        if ($validated['tags'] ?? false) {
+            $products->whereHas('tags', function($q) use ($validated) {
+                $q->whereIn('name', $validated['tags']);
+            });
+        }
+
+        if ($validated['price_min'] ?? false) {
+            $products->where('price', '>=', $validated['price_min']);
+        }
+
+        if ($validated['price_max'] ?? false) {
+            $products->where('price', '<=', $validated['price_max']);
+        }
+
+        if ($validated['rating_min'] ?? false) {
+            $products->where('rating', '>=', $validated['rating_min']);
+        }
+
+        if ($validated['brand'] ?? false) {
+            $products->where('brand', 'LIKE', "%{$validated['brand']}%");
+        }
+
+        if ($validated['size'] ?? false) {
+            $products->where('size', 'LIKE', "%{$validated['size']}%");
+        }
+
+        if ($validated['color'] ?? false) {
+            $products->where('color', 'LIKE', "%{$validated['color']}%");
+        }
+
+        if ($validated['availability'] ?? false) {
+            $products->where('availability', $validated['availability']);
+        }
+
+        if ($validated['sort_by'] ?? false && $validated['sort_order'] ?? false) {
+            $products->orderBy($validated['sort_by'], $validated['sort_order']);
+        }
+
+        $products = $products->paginate(16);
 
         return response()->json($products);
     }
+
 
     /**
      * Update the specified product in storage.
