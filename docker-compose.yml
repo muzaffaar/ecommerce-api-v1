@@ -11,11 +11,18 @@ services:
     working_dir: /var/www/html
     depends_on:
       - db
+      - php
     environment:
       DB_HOST: db
       DB_DATABASE: lara_ecommerce_api
       DB_USERNAME: root
       DB_PASSWORD: password
+
+  php:
+    image: php:8.2-fpm
+    volumes:
+      - .:/var/www/html
+    working_dir: /var/www/html
 
   db:
     image: mysql:5.7
@@ -32,6 +39,7 @@ services:
     image: nginx:alpine
     depends_on:
       - app
+      - php
     ports:
       - "8000:80"
     volumes:

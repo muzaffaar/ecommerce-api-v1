@@ -42,7 +42,7 @@ class ProductTest extends TestCase
         $variations = ProductVariation::factory()->count(3)->create(['product_id' => $product->id]);
         $images = ProductImage::factory()->count(2)->create(['product_id' => $product->id, 'is_primary' => true]);
 
-        $response = $this->getJson('/api/products');
+        $response = $this->getJson(route('products.index'));
 
         $response->assertStatus(200);
 
@@ -106,7 +106,78 @@ class ProductTest extends TestCase
     }
 
     /** @test */
-    public function it_can_store_a_product()
+    public function admin_can_list_products()
+    {
+        $category = Category::factory()->create();
+        $product = Product::factory()->create(['category_id' => $category->id]);
+        $variations = ProductVariation::factory()->count(3)->create(['product_id' => $product->id]);
+        $images = ProductImage::factory()->count(2)->create(['product_id' => $product->id, 'is_primary' => true]);
+
+        $response = $this->getJson(route('admin.products.index'));
+
+        $response->assertStatus(200);
+
+        $jsonData = $response->json();
+
+        $responseProduct = collect($jsonData)->firstWhere('id', $product->id);
+
+        $this->assertNotNull($responseProduct, "Product not found in response");
+
+        foreach ($images as $image) {
+            $imageFound = collect($responseProduct['images'])->firstWhere('id', $image->id);
+            $this->assertNotNull($imageFound, "Image with id {$image->id} not found in response product");
+            $this->assertEquals($image->product_id, $imageFound['product_id'], "Product ID mismatch for image {$image->id}");
+            $this->assertEquals($image->url, $imageFound['url'], "URL mismatch for image {$image->id}");
+            $this->assertEquals($image->is_primary, $imageFound['is_primary'], "Primary status mismatch for image {$image->id}");
+        }
+
+        foreach ($variations as $variation) {
+            $variationFound = collect($responseProduct['variations'])->firstWhere('id', $variation->id);
+            $this->assertNotNull($variationFound, "Variation with id {$variation->id} not found in response product");
+            $this->assertEquals($variation->product_id, $variationFound['product_id'], "Product ID mismatch for variation {$variation->id}");
+            $this->assertEquals($variation->type, $variationFound['type'], "Type mismatch for variation {$variation->id}");
+            $this->assertEquals($variation->value, $variationFound['value'], "Value mismatch for variation {$variation->id}");
+            $this->assertEquals(number_format($variation->price, 2), $variationFound['price'], "Price mismatch for variation {$variation->id}");
+        }
+
+        $response->assertJsonStructure([
+            '*' => [
+                'id',
+                'name',
+                'description',
+                'price',
+                'stock',
+                'category_id',
+                'slug',
+                'created_at',
+                'updated_at',
+                'images' => [
+                    '*' => [
+                        'id',
+                        'product_id',
+                        'url',
+                        'is_primary',
+                        'created_at',
+                        'updated_at',
+                    ],
+                ],
+                'variations' => [
+                    '*' => [
+                        'id',
+                        'product_id',
+                        'type',
+                        'value',
+                        'price',
+                        'created_at',
+                        'updated_at',
+                    ],
+                ],
+            ],
+        ]);
+    }
+
+    /** @test */
+    public function admin_can_store_a_product()
     {
         $category = Category::factory()->create();
         $tags = Tag::factory()->count(2)->create();
@@ -126,7 +197,7 @@ class ProductTest extends TestCase
             'tags' => $tags->pluck('id')->toArray()
         ];
 
-        $response = $this->actingAs($this->adminUser)->postJson('/api/products', $data);
+        $response = $this->actingAs($this->adminUser)->postJson(route('admin.products.store'), $data);
 
         $response->assertStatus(201)
                 ->assertJsonFragment(['name' => $data['name']]);
@@ -193,6 +264,39 @@ class ProductTest extends TestCase
             })->toArray(),
         ]);
     }
+    /** @test */
+    public function admin_can_show_a_product()
+    {
+        $category = Category::factory()->create();
+        $product = Product::factory()->create(['category_id' => $category->id, 'price' => 67.72]);
+        $variations = ProductVariation::factory()->count(3)->create(['product_id' => $product->id]);
+
+        $response = $this->get(route('admin.products.show', ['slug' => $product->slug]));
+
+        $response->assertStatus(200);
+
+        $response->assertJson([
+            'id' => $product->id,
+            'name' => $product->name,
+            'description' => $product->description,
+            'price' => 67.72,
+            'stock' => $product->stock,
+            'slug' => $product->slug,
+            'category' => [
+                'id' => $category->id,
+                'name' => $category->name,
+                'description' => $category->description,
+            ],
+            'variations' => $variations->map(function ($variation) {
+                return [
+                    'id' => $variation->id,
+                    'type' => $variation->type,
+                    'value' => $variation->value,
+                    'price' => (float) $variation->price,
+                ];
+            })->toArray(),
+        ]);
+    }
 
     /** @test */
     public function admin_can_update_a_product()
@@ -210,7 +314,7 @@ class ProductTest extends TestCase
             'stock' => 50,
         ];
 
-        $response = $this->put(route('products.update', ['slug' => $product->slug]), $newData);
+        $response = $this->put(route('admin.products.update', ['slug' => $product->slug]), $newData);
 
         $response->assertStatus(200);
 
@@ -271,7 +375,7 @@ class ProductTest extends TestCase
             ],
         ];
 
-        $response = $this->put(route('products.update', ['slug' => $product->slug]), $newData);
+        $response = $this->put(route('admin.products.update', ['slug' => $product->slug]), $newData);
 
         $response->assertStatus(200);
 
@@ -315,7 +419,7 @@ class ProductTest extends TestCase
         ProductVariation::factory()->create(['product_id' => $product->id]);
         ProductImage::factory()->create(['product_id' => $product->id]);
 
-        $response = $this->delete(route('products.destroy', ['slug' => $product->slug]));
+        $response = $this->delete(route('admin.products.destroy', ['slug' => $product->slug]));
 
         $response->assertStatus(200);
 
@@ -338,7 +442,7 @@ class ProductTest extends TestCase
             'stock' => $this->faker->numberBetween(1, 100),
             'category_id' => $category->id,
         ];
-        $response = $this->actingAs($this->nonAdminUser)->postJson('/api/products', $data);
+        $response = $this->actingAs($this->nonAdminUser)->postJson(route('admin.products.store'), $data);
         $response->assertStatus(403);
     }
 
@@ -355,7 +459,7 @@ class ProductTest extends TestCase
             'category_id' => $category->id,
         ];
         
-        $response = $this->actingAs($this->nonAdminUser)->putJson("/api/products/{$product->slug}", $data);
+        $response = $this->actingAs($this->nonAdminUser)->putJson(route('admin.products.update', $product->slug), $data);
         
         $response->assertStatus(403);
     }
@@ -366,7 +470,7 @@ class ProductTest extends TestCase
         $category = Category::factory()->create();
         $product = Product::factory()->create(['category_id'=>$category->id]);
 
-        $response = $this->actingAs($this->nonAdminUser)->deleteJson("/api/products/{$product->slug}");
+        $response = $this->actingAs($this->nonAdminUser)->deleteJson(route('admin.products.destroy', $product->slug));
 
         $response->assertStatus(403);
     }
@@ -380,7 +484,7 @@ class ProductTest extends TestCase
             'category_id' => $category->id
         ]);
 
-        $response = $this->getJson('/api/products/search?query=Searchable');
+        $response = $this->getJson(route('products.search', ['query' => 'Searchable']));
 
         $response->assertStatus(200)
             ->assertJsonFragment(['name' => 'Searchable Product']);
