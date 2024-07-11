@@ -99,62 +99,68 @@ class ProductController extends Controller
     {
         $validated = $request->validated();
 
-        $products = Product::query();
+        $productsQuery = Product::query();
+
+        // Apply filters based on validated inputs
 
         if ($validated['name'] ?? false) {
-            $products->where('name', 'LIKE', "%{$validated['name']}%");
+            $productsQuery->where('name', 'LIKE', "%{$validated['name']}%");
         }
 
         if ($validated['description'] ?? false) {
-            $products->where('description', 'LIKE', "%{$validated['description']}%");
+            $productsQuery->where('description', 'LIKE', "%{$validated['description']}%");
         }
 
         if ($validated['category_id'] ?? false) {
-            $products->where('category_id', $validated['category_id']);
+            $productsQuery->where('category_id', $validated['category_id']);
         }
 
         if ($validated['tags'] ?? false) {
-            $products->whereHas('tags', function($q) use ($validated) {
+            $productsQuery->whereHas('tags', function($q) use ($validated) {
                 $q->whereIn('name', $validated['tags']);
             });
         }
 
         if ($validated['price_min'] ?? false) {
-            $products->where('price', '>=', $validated['price_min']);
+            $productsQuery->where('price', '>=', $validated['price_min']);
         }
 
         if ($validated['price_max'] ?? false) {
-            $products->where('price', '<=', $validated['price_max']);
+            $productsQuery->where('price', '<=', $validated['price_max']);
         }
 
         if ($validated['rating_min'] ?? false) {
-            $products->where('rating', '>=', $validated['rating_min']);
+            $productsQuery->where('rating', '>=', $validated['rating_min']);
         }
 
         if ($validated['brand'] ?? false) {
-            $products->where('brand', 'LIKE', "%{$validated['brand']}%");
+            $productsQuery->where('brand', 'LIKE', "%{$validated['brand']}%");
         }
 
         if ($validated['size'] ?? false) {
-            $products->where('size', 'LIKE', "%{$validated['size']}%");
+            $productsQuery->where('size', 'LIKE', "%{$validated['size']}%");
         }
 
         if ($validated['color'] ?? false) {
-            $products->where('color', 'LIKE', "%{$validated['color']}%");
+            $productsQuery->where('color', 'LIKE', "%{$validated['color']}%");
         }
 
         if ($validated['availability'] ?? false) {
-            $products->where('availability', $validated['availability']);
+            $productsQuery->where('availability', $validated['availability']);
         }
 
+        // Sorting
         if ($validated['sort_by'] ?? false && $validated['sort_order'] ?? false) {
-            $products->orderBy($validated['sort_by'], $validated['sort_order']);
+            $productsQuery->orderBy($validated['sort_by'], $validated['sort_order']);
         }
 
-        $products = $products->paginate(16);
+        // Paginate the results
+        $products = $productsQuery->with('category', 'tags', 'images', 'variations') // Eager load relationships
+                                ->paginate(16);
 
         return response()->json($products);
     }
+
 
 
     /**
