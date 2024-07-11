@@ -40,6 +40,7 @@ class ProductSearchRequest extends FormRequest
     {
         return [
             'category_id.exists' => 'The selected category does not exist.',
+            'tags.array' => 'The error with tags',
             'tags.*.string' => 'Each tag must be a string.',
             'price_min.numeric' => 'The minimum price must be a number.',
             'price_min.min' => 'The minimum price must be at least 0.',
