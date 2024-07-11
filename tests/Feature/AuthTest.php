@@ -16,7 +16,7 @@ class AuthTest extends TestCase
     /** @test */
     public function it_registers_a_user()
     {
-        $response = $this->postJson('/api/register', [
+        $response = $this->postJson(route('api.register'), [
             'name' => 'John Doe',
             'email' => 'johndoe@example.com',
             'phone' => '+36123456789',
@@ -37,7 +37,7 @@ class AuthTest extends TestCase
             'password' => Hash::make('password123'),
         ]);
 
-        $response = $this->postJson('/api/login', [
+        $response = $this->postJson(route('api.login'), [
             'email' => 'johndoe@example.com',
             'password' => 'password123',
         ]);
@@ -54,7 +54,7 @@ class AuthTest extends TestCase
             'password' => Hash::make('password123'),
         ]);
 
-        $response = $this->postJson('/api/login', [
+        $response = $this->postJson(route('api.login'), [
             'email' => 'johndoe@example.com',
             'password' => 'wrongpassword',
         ]);
@@ -70,7 +70,7 @@ class AuthTest extends TestCase
         
         Sanctum::actingAs($user);
 
-        $response = $this->postJson('/api/logout');
+        $response = $this->postJson(route('api.logout'));
 
         $response->assertStatus(200);
 
