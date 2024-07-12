@@ -37,4 +37,35 @@ class Order extends Model
     {
         return $this->belongsTo(ShippingAddress::class);
     }
+
+    public function tasks()
+    {
+        return $this->hasMany(Task::class);
+    }
+
+    public function updateStatusBasedOnTasks()
+    {
+        $taskStatuses = $this->tasks->pluck('status')->unique();
+
+        if ($taskStatuses->contains('in_progress')) {
+            $this->status = 'in_progress';
+        } elseif ($taskStatuses->contains('pending')) {
+            $this->status = 'pending';
+        } elseif ($taskStatuses->contains('cancelled')) {
+            $this->status = 'cancelled';
+        } elseif ($taskStatuses->every(fn($status) => $status == 'completed')) {
+            $this->status = 'completed';
+        } else {
+            $this->status = 'pending';
+        }
+
+        $this->save();
+    }
+
+    public static $statuses = [
+        'pending',
+        'in_progress',
+        'completed',
+        'cancelled'
+    ];
 }
