@@ -11,6 +11,13 @@ use Illuminate\Http\Request;
 
 class TaskController extends Controller
 {
+    public function index()
+    {
+        $tasks = Task::with(['order', 'courier', 'shippingAddress'])->get();
+
+        return response()->json(['status' => 'success', 'tasks' => $tasks]);
+    }
+
     public function assignCourier(Request $request, Task $task)
     {
         $courier = User::find($request->courier_id);
