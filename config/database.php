@@ -4,6 +4,16 @@ use Illuminate\Support\Str;
 
 return [
 
+    'factories' => [
+    'default' => [
+        'connection' => 'mysql',
+        'factories' => [
+            \App\Models\CartItem::class => \Database\Factories\CartItemFactory::class,
+            ],
+        ],
+    ],
+
+
     /*
     |--------------------------------------------------------------------------
     | Default Database Connection Name

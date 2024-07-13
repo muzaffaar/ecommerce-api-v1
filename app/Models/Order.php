@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Notifications\TaskCreated;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -43,6 +44,34 @@ class Order extends Model
         return $this->hasMany(Task::class);
     }
 
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::updated(function ($order) {
+            if ($order->isDirty('status') && $order->status == 'ready') {
+                $order->createTask();
+            }
+        });
+    }
+
+    public function createTask()
+    {
+        $task = Task::create([
+            'order_id' => $this->id,
+            'shipping_address_id' => $this->shipping_address_id,
+            'status' => 'pending',
+        ]);
+
+        $freeCouriers = User::where('role', 'courier')->whereDoesntHave('tasks', function($query) {
+            $query->where('status', 'in_progress');
+        })->get();
+
+        foreach ($freeCouriers as $courier) {
+            $courier->notify(new TaskCreated($task));
+        }
+    }
+
     public function updateStatusBasedOnTasks()
     {
         $taskStatuses = $this->tasks->pluck('status')->unique();
@@ -66,6 +95,7 @@ class Order extends Model
         'pending',
         'in_progress',
         'completed',
-        'cancelled'
+        'cancelled',
+        'ready'
     ];
 }

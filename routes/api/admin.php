@@ -24,5 +24,6 @@ Route::middleware(['auth:sanctum', 'can:admin'])->prefix('admin')->group(functio
     Route::post('/tasks/{task}/assign', [TaskController::class, 'assignCourier'])->name('admin.tasks.assignCourier');
     Route::post('/tasks/{task}/unassign', [TaskController::class, 'unassignCourier'])->name('admin.tasks.unassignCourier');
     Route::post('/tasks/{task}/status', [TaskController::class, 'updateStatus'])->name('admin.tasks.updateStatus');
+    Route::get('/tasks/{task}', [TaskController::class, 'show'])->name('admin.tasks.show');
     Route::get('/tasks', [TaskController::class, 'index'])->name('admin.tasks.index');
 });

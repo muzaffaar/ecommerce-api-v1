@@ -9,6 +9,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\URL;
 use Laravel\Sanctum\HasApiTokens;
 use App\Notifications\VerifyEmail as CustomVerifyEmail;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -58,7 +59,7 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->role === 'admin';
     }
 
-    public function cart()
+    public function cart(): HasOne
     {
         return $this->hasOne(Cart::class);
     }
@@ -76,6 +77,11 @@ class User extends Authenticatable implements MustVerifyEmail
     public function shippingAddress()
     {
         return $this->hasOne(ShippingAddress::class);
+    }
+
+    public function tasks()
+    {
+        return $this->hasMany(Task::class, 'courier_id');
     }
 
 }

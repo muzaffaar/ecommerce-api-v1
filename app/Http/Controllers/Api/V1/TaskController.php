@@ -78,7 +78,7 @@ class TaskController extends Controller
     public function acceptTask(Request $request, Task $task)
     {
         $courier = auth()->user();
-
+        // return response()->json($courier->role);
         if ($courier->role != 'courier') {
             return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 403);
         }

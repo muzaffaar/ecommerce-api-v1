@@ -29,7 +29,7 @@ Route::middleware(['auth:sanctum'])->group(function(){
     Route::middleware(['verified', 'phone.verified'])->group(function (){
         Route::post('/payment', [PaymentController::class, 'payment'])->name('payment');
         Route::get('/success', [PaymentController::class, 'success'])->name('success');
-        Route::get('/cancel', [PaymentController::class, 'calcel'])->name('cancel');
+        Route::get('/cancel', [PaymentController::class, 'cancel'])->name('cancel');
 
         Route::get('/checkout', [CheckoutController::class, 'checkout'])->name('checkout');
     });

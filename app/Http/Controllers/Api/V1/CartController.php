@@ -88,12 +88,12 @@ class CartController extends Controller
      */
     public function cartDeleteItem(Request $request)
     {
-        $request->validate([
-            'cart_item_id' => 'required|exists:cart_items,id',
-        ]);
-
+        
         // Determine cart based on user authentication
         if (Auth::check()) {
+            $request->validate([
+                'cart_item_id' => 'required|exists:cart_items,id',
+            ]);
             // Authenticated user
             $user = Auth::user();
             $cartItem = CartItem::where('id', $request->cart_item_id)
@@ -102,6 +102,9 @@ class CartController extends Controller
                                 })
                                 ->firstOrFail();
         } else {
+            $request->validate([
+                'cart_item_id' => 'required',
+            ]);
             // Guest user
             $cartItems = session()->get('cart.items', []);
 
@@ -123,39 +126,65 @@ class CartController extends Controller
      */
     public function cartUpdateItem(Request $request)
     {
-        $request->validate([
-            'cart_item_id' => 'required|exists:cart_items,id',
-            'quantity' => 'required|integer|min:1',
-        ]);
-
+        
         // Determine cart based on user authentication
         if (Auth::check()) {
+            $request->validate([
+                'cart_item_id' => 'required|exists:cart_items,id',
+                'quantity' => 'required|integer|min:1',
+            ]);
             // Authenticated user
             $user = Auth::user();
-            $cartItem = CartItem::where('id', $request->cart_item_id)
+            $cartItems = CartItem::where('id', $request->cart_item_id)
                                 ->whereHas('cart', function ($query) use ($user) {
                                     $query->where('user_id', $user->id);
                                 })
                                 ->firstOrFail();
 
-            $cartItem->update([
+            $cartItems->update([
                 'quantity' => $request->quantity,
-                'subtotal' => $cartItem->price * $request->quantity, // Update subtotal
+                'subtotal' => $cartItems->price * $request->quantity, // Update subtotal
             ]);
 
         } else {
-            // Guest user
-            $cartItem = session()->get('cart.items', []);
-
-            // Update the quantity of the cart item in session
-            $cartItem[$request->cart_item_id]['quantity'] = $request->quantity;
-            $cartItem[$request->cart_item_id]['subtotal'] = $cartItem[$request->cart_item_id]['price'] * $request->quantity;
-            session()->put('cart.items', $cartItem);
-
-            return response()->json(['message' => 'Cart item updated successfully', 'cart_item' => $cartItem[$request->cart_item_id]]);
+            $request->validate([
+                'cart_item_id' => 'required',
+                'quantity' => 'required|integer|min:1',
+            ]);
+            // Guest user scenario (simulating session)
+            $cartItems = session()->get('cart.items', []);
+            // dd($cartItems);
+            // return response()->json($cartItems);
+    
+            // Check if the cart item exists in session
+            if (!isset($cartItems[$request->cart_item_id])) {
+                return response()->json([
+                    'message' => 'The selected cart item id is invalid.',
+                    'errors' => [
+                        'cart_item_id' => ['The selected cart item id is invalid.'],
+                    ],
+                ], 422);
+            }
+    
+            // Update quantity and subtotal
+            $cartItems[$request->cart_item_id]['quantity'] = $request->quantity;
+            $cartItems[$request->cart_item_id]['subtotal'] = $cartItems[$request->cart_item_id]['price'] * $request->quantity;
+    
+            // Update attributes if provided
+            if ($request->attributes) {
+                $cartItems[$request->cart_item_id]['attributes'] = json_encode($request->attributes);
+            }
+    
+            // Update session with modified cart items
+            session()->put('cart.items', $cartItems);
+    
+            return response()->json([
+                'message' => 'Cart item updated successfully',
+                'cart_item' => $cartItems[$request->cart_item_id],
+            ]);
         }
 
-        return response()->json(['message' => 'Cart item updated successfully', 'cart_item' => $cartItem]);
+        return response()->json(['message' => 'Cart item updated successfully', 'cart_items' => $cartItems]);
     }
 
     /**
@@ -225,7 +254,7 @@ class CartController extends Controller
     /**
      * Helper function to transfer session cart items to database for authenticated users.
      */
-    private function transferSessionCartToDatabase($user)
+    public function transferSessionCartToDatabase($user)
     {
         $cartItems = session()->get('cart.items', []);
 
@@ -247,7 +276,7 @@ class CartController extends Controller
                             // Add other fields as needed
                         ]
                     );
-                } else {
+                } else {    
                     // Add new cart item to the user's cart
                     $product = Product::findOrFail($item['product_id']);
                     $cartItem = new CartItem([
