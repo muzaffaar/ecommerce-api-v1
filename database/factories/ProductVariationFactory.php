@@ -15,14 +15,16 @@ class ProductVariationFactory extends Factory
 
     public function definition()
     {
-        $type = $this->faker->randomElement(['color', 'size']);
-        $value = $type === 'color' ? $this->faker->safeColorName() : $this->faker->randomElement(['S', 'M', 'L', 'XL']);
+        $type = $this->faker->randomElement(['size', 'color']);
+        $sizes = ['Small', 'Medium', 'Large', 'X-Large'];
+        $colors = ['Red', 'Blue', 'Green', 'Yellow'];
+
+        $value = $type === 'size' ? $this->faker->randomElement($sizes) : $this->faker->randomElement($colors);
 
         return [
             'type' => $type,
             'value' => $value,
-            'price' => $this->faker->randomFloat(2, 1, 100),
-            'product_id' => Product::factory(),
+            'price' => $this->faker->randomFloat(2, 10, 200),
         ];
     }
 }

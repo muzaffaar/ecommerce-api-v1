@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Api\V1\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\RegisterRequest;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Lang;
 
 /**
  * @group Authentication
@@ -33,14 +35,9 @@ class AuthController extends Controller
      *  "token": "1|sometokenstring"
      * }
      */
-    public function register(Request $request)
+    public function register(RegisterRequest $request)
     {
-        $validatedData = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'phone' => 'required|string|regex:/^\+36\d{9}$/|unique:users',
-            'password' => 'required|string|min:8',
-        ]);
+        $validatedData = $request->validated();
 
         $validatedData['password'] = Hash::make($request->password);
 
@@ -69,15 +66,15 @@ class AuthController extends Controller
      * }
      */
 
-    public function login(Request $request)
-    {
+     public function login(Request $request)
+     {
         $credentials = $request->validate([
-            'email' => 'required|string|email',
+            'email' => 'required|string|email', // |exists:users,email
             'password' => 'required|string',
         ]);
 
         if (!Auth::attempt($credentials)) {
-            return response()->json(['message' => 'Unauthorized'], 401);
+            return response()->json(['message' => Lang::get('http.401')], 401); // Unauthorized
         }
 
         $user = $request->user();
@@ -97,8 +94,8 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-        auth()->user()->tokens()->delete();
+        auth()->user()->tokens->delete();
 
-        return response()->json(['message' => 'Logged out', 'user' => auth()->user()], 200);
+        return response()->json(['message' => Lang::get('http.200'), 'user' => auth()->user()], 200); // OK
     }
 }

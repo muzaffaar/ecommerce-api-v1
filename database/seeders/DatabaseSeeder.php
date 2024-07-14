@@ -4,6 +4,9 @@ namespace Database\Seeders;
 
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 
+use App\Models\Category;
+use App\Models\Product;
+use App\Models\Tag;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
@@ -14,32 +17,17 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // \App\Models\User::factory(10)->create();
+        // User::factory()->create(['role' => 'admin', 'password' => bcrypt('123123123')]);
 
-        // \App\Models\User::factory()->create([
-        //     'name' => 'Test User',
-        //     'email' => 'test@example.com',
-        // ]);
+        Category::factory()->count(10)->create();
 
-        // User::create([
-        //     'name' => 'admin',
-        //     'email' => 'admin@gmail.com',
-        //     'password' => bcrypt('123456'),
-        //     'role' => 'admin'
-        // ]);
+        Tag::factory()->count(10)->create();
 
-        // User::create([
-        //     'name' => 'editor',
-        //     'email' => 'editor@gmail.com',
-        //     'password' => bcrypt('123456'),
-        //     'role' => 'editor'
-        // ]);
+        Product::factory()->count(10)->create();
 
-        // User::create([
-        //     'name' => 'user',
-        //     'email' => 'user@gmail.com',
-        //     'password' => bcrypt('123456'),
-        //     'role' => 'user'
+        // $this->call([
+        //     Tag::class,
+        //     CategorySeeder::class,
         // ]);
 
     }

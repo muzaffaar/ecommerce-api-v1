@@ -84,4 +84,9 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(Task::class, 'courier_id');
     }
 
+    public function coupons()
+    {
+        return $this->belongsToMany(Coupon::class, 'coupon_user')->withTimestamps();
+    }
+
 }

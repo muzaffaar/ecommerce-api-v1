@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Auth\EmailVerificationController;
 use App\Http\Controllers\Api\V1\Auth\PhoneVerificationController;
 use App\Http\Controllers\Api\V1\CheckoutController;
+use App\Http\Controllers\Api\V1\CouponController;
 use App\Http\Controllers\Api\V1\PaymentController;
 use Illuminate\Support\Facades\Route;
 
@@ -27,10 +28,15 @@ Route::middleware(['auth:sanctum'])->group(function(){
     });
     
     Route::middleware(['verified', 'phone.verified'])->group(function (){
-        Route::post('/payment', [PaymentController::class, 'payment'])->name('payment');
-        Route::get('/success', [PaymentController::class, 'success'])->name('success');
-        Route::get('/cancel', [PaymentController::class, 'cancel'])->name('cancel');
 
+        Route::post('/payment', [PaymentController::class, 'payment'])->name('payment');
+
+        Route::get('/success', [PaymentController::class, 'success'])->name('success');
+        
+        Route::get('/cancel', [PaymentController::class, 'cancel'])->name('cancel');
+        
         Route::get('/checkout', [CheckoutController::class, 'checkout'])->name('checkout');
+
+        Route::post('/coupons/apply', [CouponController::class, 'apply'])->name('coupons.apply');
     });
 });

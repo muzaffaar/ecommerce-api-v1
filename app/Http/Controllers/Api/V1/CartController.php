@@ -13,9 +13,6 @@ use Illuminate\Support\Facades\Session;
 
 class CartController extends Controller
 {
-    /**
-     * Add item to the cart.
-     */
     public function cartAddItem(Request $request)
     {
         $request->validate([
@@ -23,53 +20,57 @@ class CartController extends Controller
             'quantity' => 'required|integer|min:1',
         ]);
 
-        // Determine cart based on user authentication
+        // Calculate the total variation price
+        $variationTotalPrice = 0;
+        if ($request->has('variations')) {
+            foreach ($request->variations as $variation) {
+                $variationTotalPrice += $variation['price'];
+            }
+        }
+
         if (Auth::check()) {
-            // Authenticated user
             $user = auth()->user();
             $cart = $user->cart()->firstOrCreate([]);
 
-            $cartItems = $cart->cartItems()->where('product_id', $request->product_id)->first();
+            $cartItem = $cart->cartItems()->where('product_id', $request->product_id)->first();
 
-            if ($cartItems) {
-                // Update quantity if item already exists in cart
-                $newQuantity = $cartItems->quantity + $request->quantity;
-                $cartItems->update([
+            if ($cartItem) {
+                $newQuantity = $cartItem->quantity + $request->quantity;
+                $cartItem->update([
                     'quantity' => $newQuantity,
-                    'subtotal' => $cartItems->price * $newQuantity,
+                    'subtotal' => ($cartItem->price + $variationTotalPrice) * $newQuantity,
                 ]);
             } else {
-                // Add new item to cart
                 $product = Product::findOrFail($request->product_id);
-                $cartItems = new CartItem([
+                $cartItem = new CartItem([
+                    'cart_id' => $cart->id,
                     'product_id' => $product->id,
                     'quantity' => $request->quantity,
-                    'price' => $product->price, // Assuming price is stored in the product table
-                    'subtotal' => $product->price * $request->quantity, // Calculate subtotal
+                    'price' => $product->price,
+                    'subtotal' => ($product->price + $variationTotalPrice) * $request->quantity,
                     'attributes' => json_encode($request->variations),
                     'is_gift' => $request->is_gift ?? false,
                     'notes' => $request->notes,
                     'custom_fields' => json_encode($request->custom_fields),
                 ]);
-                $cart->cartItems()->save($cartItems);
+                $cart->cartItems()->save($cartItem);
             }
+
+            return response()->json(['message' => 'Authenticated user added item to cart', 'cart_items' => $cart->cartItems]);
         } else {
-            // Guest user
             $cartItems = session()->get('cart.items', []);
 
-            // Check if item already exists in cart
             $key = $request->product_id;
             if (isset($cartItems[$key])) {
                 $cartItems[$key]['quantity'] += $request->quantity;
-                $cartItems[$key]['subtotal'] = $cartItems[$key]['price'] * $cartItems[$key]['quantity'];
+                $cartItems[$key]['subtotal'] = ($cartItems[$key]['price'] + $variationTotalPrice) * $cartItems[$key]['quantity'];
             } else {
-                // Add new item to cart
                 $product = Product::findOrFail($request->product_id);
                 $cartItems[$key] = [
                     'product_id' => $product->id,
                     'quantity' => $request->quantity,
-                    'price' => $product->price, // Assuming price is stored in the product table
-                    'subtotal' => $product->price * $request->quantity, // Calculate subtotal
+                    'price' => $product->price,
+                    'subtotal' => ($product->price + $variationTotalPrice) * $request->quantity,
                     'attributes' => json_encode($request->variations),
                     'is_gift' => $request->is_gift ?? false,
                     'notes' => $request->notes,
@@ -78,10 +79,12 @@ class CartController extends Controller
             }
 
             session()->put('cart.items', $cartItems);
-        }
 
-        return response()->json(['message' => 'Item added to cart successfully', 'cart_item' => $cartItems]);
+            return response()->json(['message' => 'Item added to session cart', 'cart_items' => $cartItems]);
+        }
     }
+
+
 
     /**
      * Delete item from the cart.
@@ -196,13 +199,13 @@ class CartController extends Controller
         if (Auth::check()) {
             // Authenticated user
             $user = Auth::user();
-            $cart = $user->cart()->with('cartItems.product')->first();
+            $cart = $user->cart->with('cartItems.product')->first();
 
             // Transfer session cart items to database if any
             $this->transferSessionCartToDatabase($user);
 
             // Refresh cart object after transfer
-            $cart = $user->cart()->with('cartItems.product')->first();
+            $cart = $user->cart->with('cartItems.product')->first();
 
             if ($cart) {
                 $cart->cartItems->transform(function ($cartItem) {

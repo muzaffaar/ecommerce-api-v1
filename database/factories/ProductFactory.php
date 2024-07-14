@@ -1,15 +1,19 @@
 <?php
 
+// database/factories/ProductFactory.php
+
 namespace Database\Factories;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\Tag;
+use App\Models\Variation;
+use App\Models\Image;
+use App\Models\ProductImage;
+use App\Models\ProductVariation;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
-/**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Product>
- */
 class ProductFactory extends Factory
 {
     protected $model = Product::class;
@@ -18,7 +22,7 @@ class ProductFactory extends Factory
     {
         $name = $this->faker->unique()->word;
         $category = Category::factory()->create();
-        
+
         return [
             'name' => $name,
             'description' => $this->faker->paragraph,
@@ -27,5 +31,20 @@ class ProductFactory extends Factory
             'category_id' => $category->id,
             'slug' => Str::slug($name) . '-' . $this->faker->unique()->randomNumber(),
         ];
+    }
+
+    public function configure()
+    {
+        return $this->afterCreating(function (Product $product) {
+            // Create variations
+            ProductVariation::factory()->count(2)->create(['product_id' => $product->id]);
+
+            // Create images
+            ProductImage::factory()->count(2)->create(['product_id' => $product->id]);
+
+            // Attach tags
+            $tags = Tag::inRandomOrder()->take(3)->pluck('id');
+            $product->tags()->attach($tags);
+        });
     }
 }
