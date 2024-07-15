@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\Auth\PhoneVerificationController;
 use App\Http\Controllers\Api\V1\CheckoutController;
 use App\Http\Controllers\Api\V1\CouponController;
 use App\Http\Controllers\Api\V1\PaymentController;
+use App\Http\Controllers\Api\V1\ReviewController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -39,4 +40,10 @@ Route::middleware(['auth:sanctum'])->group(function(){
 
         Route::post('/coupons/apply', [CouponController::class, 'apply'])->name('coupons.apply');
     });
+
+    Route::post('order-items/{orderItemId}/reviews', [ReviewController::class, 'store'])->name('reviews.store');
+
+    Route::put('reviews/{id}', [ReviewController::class, 'update'])->name('reviews.update');
+    
+    Route::delete('reviews/{id}', [ReviewController::class, 'destroy'])->name('reviews.destroy');
 });

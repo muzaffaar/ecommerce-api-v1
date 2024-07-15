@@ -89,12 +89,13 @@ class TagTest extends TestCase
         $tag = Tag::factory()->create();
         $product = Product::factory()->create();
 
-        $response = $this->actingAs($this->admin)->postJson(route('admin.tags.attachTagToProduct', $product), ['tag_id' => $tag->id]);
+        $response = $this->actingAs($this->admin)->postJson(route('admin.tags.attachTagToProduct', $product), [
+            'tag_id' => $tag->id,
+        ]);
 
-        $response->assertStatus(200)
-                 ->assertJsonFragment(['message' => 'Tag attached to product successfully']);
-
-        $this->assertDatabaseHas('product_tag', ['product_id' => $product->id, 'tag_id' => $tag->id]);
+        $response->assertStatus(200);
+        $response->assertJson(['message' => 'Tag attached to product successfully']);
+        $this->assertTrue($product->tags()->where('tags.id', $tag->id)->exists());
     }
 
     /** @test */

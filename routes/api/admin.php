@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\CouponController;
 use App\Http\Controllers\Api\V1\ProductController;
+use App\Http\Controllers\Api\V1\ReviewController;
 use App\Http\Controllers\Api\V1\StatisticsController;
 use App\Http\Controllers\Api\V1\TagController;
 use App\Http\Controllers\Api\V1\TaskController;
@@ -42,4 +43,8 @@ Route::middleware(['auth:sanctum', 'can:admin'])->prefix('admin')->group(functio
     Route::delete('/tags/{tag}', [TagController::class, 'destroy'])->name('admin.tags.destroy');
     Route::post('/products/{product}/tags', [TagController::class, 'attachTagToProduct'])->name('admin.tags.attachTagToProduct');
     Route::delete('/products/{product}/tags', [TagController::class, 'detachTagFromProduct'])->name('admin.tags.detachTagFromProduct');
+
+    Route::put('reviews/{id}', [ReviewController::class, 'update'])->name('admin.reviews.update');
+    Route::delete('reviews/{id}', [ReviewController::class, 'destroy'])->name('admin.reviews.destroy');
+    Route::get('reviews/{id}', [ReviewController::class, 'show'])->name('admin.reviews.show');
 });

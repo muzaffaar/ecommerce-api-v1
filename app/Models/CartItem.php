@@ -26,4 +26,10 @@ class CartItem extends Model
     {
         return $this->belongsTo(Cart::class);
     }
+
+    public function calculateSubtotal()
+    {
+        $subtotal = $this->price * $this->quantity;
+        $this->update(['subtotal' => $subtotal]);
+    }
 }

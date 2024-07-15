@@ -20,8 +20,19 @@ class ProductController extends Controller
      */
     public function index()
     {
-        $products = Product::with(['category', 'tags', 'images', 'variations'])->get();
-        return response()->json($products);
+        $products = Product::with(['category', 'tags', 'images', 'variations', 'reviews' => function ($query) {
+            $query->where('is_approved', 1); // Filter by approved reviews
+        }])
+        ->get()
+        ->map(function ($product) {
+            $averageRating = $product->reviews->avg('rating');
+            
+            $product->average_rating = round($averageRating, 2);
+            
+            return $product;
+        });
+
+    return response()->json($products);
     }
 
     /**
@@ -257,8 +268,10 @@ class ProductController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Product $product)
+    public function destroy(string $id)
     {
+        $product = Product::findOrFail($id);
+        
         $this->authorize('delete', $product);
 
         // Delete associated variations if any

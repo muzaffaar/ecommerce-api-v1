@@ -17,7 +17,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory()->create(['role' => 'admin', 'password' => bcrypt('123123123')]);
+        User::factory()->count(10)->create();
 
         Category::factory()->count(10)->create();
 
@@ -25,10 +25,6 @@ class DatabaseSeeder extends Seeder
 
         Product::factory()->count(10)->create();
 
-        // $this->call([
-        //     Tag::class,
-        //     CategorySeeder::class,
-        // ]);
 
     }
 }

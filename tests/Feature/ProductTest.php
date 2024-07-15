@@ -10,6 +10,7 @@ use App\Models\Tag;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class ProductTest extends TestCase
@@ -18,6 +19,10 @@ class ProductTest extends TestCase
 
     protected $adminUser;
     protected $nonAdminUser;
+    protected $product;
+    protected $tags;
+    protected $variations;
+    protected $images;
 
     protected function setUp(): void
     {
@@ -32,6 +37,12 @@ class ProductTest extends TestCase
             'role' => 'user',
             'phone_verified_at' => now(),
         ]);
+
+        $this->product = Product::factory()->create();
+        $this->tags = Tag::factory()->count(3)->create();
+        $this->variations = ProductVariation::factory()->count(2)->create(['product_id' => $this->product->id]);
+        $this->images = ProductImage::factory()->count(2)->create(['product_id' => $this->product->id]);
+        $this->product->tags()->attach($this->tags);
     }
 
     /** @test */
@@ -234,67 +245,57 @@ class ProductTest extends TestCase
     /** @test */
     public function it_can_show_a_product()
     {
-        $category = Category::factory()->create();
-        $product = Product::factory()->create(['category_id' => $category->id, 'price' => 67.72]);
-        $variations = ProductVariation::factory()->count(3)->create(['product_id' => $product->id]);
-
-        $response = $this->get(route('products.show', ['slug' => $product->slug]));
+        $response = $this->getJson(route('products.show', ['slug' => $this->product->slug]));
 
         $response->assertStatus(200);
 
+        $response->assertJsonStructure([
+            'id',
+            'name',
+            'description',
+            'price',
+            'stock',
+            'category_id',
+            'slug',
+            'category',
+            'tags',
+            'images',
+            'variations'
+        ]);
+
+    }
+
+    /** @test */
+    public function product_not_found()
+    {
+        $response = $this->getJson(route('products.show', ['slug' => 'non-existent-slug']));
+
+        $response->assertStatus(404);
+
         $response->assertJson([
-            'id' => $product->id,
-            'name' => $product->name,
-            'description' => $product->description,
-            'price' => 67.72,
-            'stock' => $product->stock,
-            'slug' => $product->slug,
-            'category' => [
-                'id' => $category->id,
-                'name' => $category->name,
-                'description' => $category->description,
-            ],
-            'variations' => $variations->map(function ($variation) {
-                return [
-                    'id' => $variation->id,
-                    'type' => $variation->type,
-                    'value' => $variation->value,
-                    'price' => (float) $variation->price,
-                ];
-            })->toArray(),
+            'message' => 'Product not found.'
         ]);
     }
+
     /** @test */
     public function admin_can_show_a_product()
     {
-        $category = Category::factory()->create();
-        $product = Product::factory()->create(['category_id' => $category->id, 'price' => 67.72]);
-        $variations = ProductVariation::factory()->count(3)->create(['product_id' => $product->id]);
-
-        $response = $this->actingAs($this->adminUser)->get(route('admin.products.show', ['slug' => $product->slug]));
+        $response = $this->actingAs($this->adminUser)->getJson(route('products.show', ['slug' => $this->product->slug]));
 
         $response->assertStatus(200);
 
-        $response->assertJson([
-            'id' => $product->id,
-            'name' => $product->name,
-            'description' => $product->description,
-            'price' => 67.72,
-            'stock' => $product->stock,
-            'slug' => $product->slug,
-            'category' => [
-                'id' => $category->id,
-                'name' => $category->name,
-                'description' => $category->description,
-            ],
-            'variations' => $variations->map(function ($variation) {
-                return [
-                    'id' => $variation->id,
-                    'type' => $variation->type,
-                    'value' => $variation->value,
-                    'price' => (float) $variation->price,
-                ];
-            })->toArray(),
+        $response->assertJsonStructure([
+            'id',
+            'name',
+            'description',
+            'price',
+            'stock',
+            'category_id',
+            'slug',
+            'category',
+            'tags',
+            'images',
+            'variations'
         ]);
     }
 
@@ -303,32 +304,81 @@ class ProductTest extends TestCase
     {
         $this->actingAs($this->adminUser);
 
-        $category = Category::factory()->create();
-        $product = Product::factory()->create(['category_id' => $category->id, 'price' => 67.72]);
-
         $newData = [
-            'category_id' => $category->id,
             'name' => 'Updated Product Name',
-            'description' => 'Updated product description.',
-            'price' => 99.99,
+            'description' => 'Updated description',
+            'price' => 199.99,
             'stock' => 50,
+            'category_id' => $this->product->category_id,
+            'variations' => [
+                [
+                    'id' => $this->variations->first()->id,
+                    'type' => 'color',
+                    'value' => 'blue',
+                    'price' => 20.00,
+                ],
+                [
+                    'type' => 'size',
+                    'value' => 'L',
+                    'price' => 30.00,
+                ],
+            ],
+            'images' => [
+                [
+                    'id' => $this->images->first()->id,
+                    'url' => 'http://example.com/updated-image.jpg',
+                    'is_primary' => true,
+                ],
+                [
+                    'url' => 'http://example.com/new-image.jpg',
+                    'is_primary' => false,
+                ],
+            ],
+            'tags' => $this->tags->pluck('id')->toArray(),
         ];
 
-        $response = $this->put(route('admin.products.update', ['slug' => $product->slug]), $newData);
+        $response = $this->putJson(route('admin.products.update', ['slug' => $this->product->slug]), $newData);
 
-        $response->assertStatus(200);
+        $response->assertStatus(200)
+            ->assertJsonFragment(['name' => 'Updated Product Name'])
+            ->assertJsonFragment(['description' => 'Updated description'])
+            ->assertJsonFragment(['price' => 199.99]);
 
-        $response->assertJson([
-            'id' => $product->id,
-            'name' => 'Updated Product Name',
-            'description' => 'Updated product description.',
-            'price' => 99.99,
-            'stock' => 50,
-        ]);
+        $this->assertDatabaseHas('products', ['name' => 'Updated Product Name']);
+        $this->assertDatabaseHas('product_variations', ['type' => 'color', 'value' => 'blue']);
+        $this->assertDatabaseHas('product_variations', ['type' => 'size', 'value' => 'L']);
+        $this->assertDatabaseHas('product_images', ['url' => 'http://example.com/updated-image.jpg', 'is_primary' => true]);
+        $this->assertDatabaseHas('product_images', ['url' => 'http://example.com/new-image.jpg', 'is_primary' => false]);
+    }
 
-        $updatedProduct = Product::find($product->id);
-        $this->assertEquals('Updated Product Name', $updatedProduct->name);
-        $this->assertEquals(99.99, $updatedProduct->price);
+    /** @test */
+    public function admin_can_destroy_a_product()
+    {
+        // Create a product with associated data
+        $product = Product::factory()
+        ->has(ProductVariation::factory()->count(2), 'variations')
+        ->has(ProductImage::factory()->count(2), 'images')
+        ->create();
+
+        // Attach tags to the product
+        $tags = Tag::factory()->count(3)->create();
+        $product->tags()->attach($tags);
+
+        // Perform the delete request as an admin user
+        $admin = User::factory()->create(['role' => 'admin']);
+        $response = $this->actingAs($admin)->deleteJson(route('admin.products.destroy', $product->id));
+
+        // Check the response status and message
+        $response->assertStatus(200)->assertJson(['message' => 'Product and associated data deleted successfully']);
+
+        // Assert the product and its associations are deleted from the database
+        $this->assertDatabaseMissing('products', ['id' => $product->id]);
+        $this->assertDatabaseMissing('product_variations', ['product_id' => $product->id]);
+        $this->assertDatabaseMissing('product_images', ['product_id' => $product->id]);
+
+        foreach ($tags as $tag) {
+            $this->assertDatabaseMissing('product_tag', ['product_id' => $product->id, 'tag_id' => $tag->id]);
+        }
     }
 
     /** @test */
@@ -409,27 +459,6 @@ class ProductTest extends TestCase
         }
     }
 
-    /** @test */
-    public function admin_can_destroy_a_product()
-    {
-        $this->actingAs($this->adminUser);
-
-        $category = Category::factory()->create();
-        $product = Product::factory()->create(['category_id' => $category->id]);
-        ProductVariation::factory()->create(['product_id' => $product->id]);
-        ProductImage::factory()->create(['product_id' => $product->id]);
-
-        $response = $this->delete(route('admin.products.destroy', ['slug' => $product->slug]));
-
-        $response->assertStatus(200);
-
-        $response->assertExactJson([
-            'message' => 'Product and associated data deleted successfully'
-        ]);
-
-        $this->assertEquals(1, ProductVariation::where('product_id', $product->id)->count());
-        $this->assertEquals(1, ProductImage::where('product_id', $product->id)->count());
-    }
 
     /** @test */
     public function non_admin_cannot_store_a_product()

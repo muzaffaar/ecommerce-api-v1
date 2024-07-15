@@ -11,6 +11,8 @@ use App\Models\Variation;
 use App\Models\Image;
 use App\Models\ProductImage;
 use App\Models\ProductVariation;
+use App\Models\Review;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
@@ -45,6 +47,17 @@ class ProductFactory extends Factory
             // Attach tags
             $tags = Tag::inRandomOrder()->take(3)->pluck('id');
             $product->tags()->attach($tags);
+            
+            // Create reviews
+            for($i=0; $i < 15; $i++)
+            {
+                Review::factory()->create([
+                    'product_id' => $product->id,
+                    'user_id' => User::factory(), // Replace with actual user IDs if needed
+                    'rating' => $this->faker->numberBetween(1, 5), // Adjust as per your rating system
+                    'review' => $this->faker->paragraph,
+                ]);
+            }
         });
     }
 }

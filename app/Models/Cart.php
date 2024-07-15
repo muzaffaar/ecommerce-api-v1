@@ -26,4 +26,17 @@ class Cart extends Model
     {
         return $this->hasMany(CartItem::class);
     }
+
+    // Add calculateTotals method
+    public function calculateTotals()
+    {
+        $totalQuantity = $this->cartItems->sum('quantity');
+        $totalPrice = $this->cartItems->sum('subtotal');
+
+        $this->update([
+            'total_quantity' => $totalQuantity,
+            'total_price' => $totalPrice,
+        ]);
+    }
+
 }
